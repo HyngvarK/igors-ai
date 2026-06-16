@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
       model,
       messages,
       stream: true,
+      max_tokens: 4096,
     }),
   });
 
