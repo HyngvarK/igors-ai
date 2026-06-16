@@ -13,6 +13,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
+  const [loadedModel, setLoadedModel] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
@@ -22,22 +23,32 @@ export default function Home() {
     fetchModels();
     fetchConversations();
 
-    // Check server status periodically
+    // Check server status and loaded model periodically
     const checkStatus = async () => {
       try {
-        const res = await fetch('/api/models');
+        const res = await fetch('/api/switch-model');
         if (res.ok) {
+          const data = await res.json();
           setServerStatus('connected');
+          setLoadedModel(data.loaded);
+          if (data.available && data.available.length > 0) {
+            setModels(data.available);
+            if (!selectedModel && data.loaded) {
+              setSelectedModel(data.loaded);
+            }
+          }
         } else {
           setServerStatus('disconnected');
+          setLoadedModel(null);
         }
       } catch {
         setServerStatus('disconnected');
+        setLoadedModel(null);
       }
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 10000);
+    const interval = setInterval(checkStatus, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -111,6 +122,27 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Failed to delete conversation:', error);
+    }
+  };
+
+  const switchModel = async (model: string) => {
+    setServerStatus('checking');
+    try {
+      const res = await fetch('/api/switch-model', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model }),
+      });
+      if (res.ok) {
+        setLoadedModel(model);
+        setSelectedModel(model);
+        setServerStatus('connected');
+      } else {
+        setServerStatus('disconnected');
+      }
+    } catch (error) {
+      console.error('Failed to switch model:', error);
+      setServerStatus('disconnected');
     }
   };
 
@@ -273,7 +305,9 @@ export default function Home() {
               <ModelSelector
                 models={models}
                 selectedModel={selectedModel}
+                loadedModel={loadedModel}
                 onSelect={setSelectedModel}
+                onSwitch={switchModel}
               />
             )}
           </div>
