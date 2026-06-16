@@ -15,11 +15,30 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchModels();
     fetchConversations();
+
+    // Check server status periodically
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('/api/models');
+        if (res.ok) {
+          setServerStatus('connected');
+        } else {
+          setServerStatus('disconnected');
+        }
+      } catch {
+        setServerStatus('disconnected');
+      }
+    };
+
+    checkStatus();
+    const interval = setInterval(checkStatus, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -231,13 +250,33 @@ export default function Home() {
           <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
             Igors AI
           </h1>
-          {models.length > 0 && (
-            <ModelSelector
-              models={models}
-              selectedModel={selectedModel}
-              onSelect={setSelectedModel}
-            />
-          )}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  serverStatus === 'connected'
+                    ? 'bg-green-500'
+                    : serverStatus === 'disconnected'
+                    ? 'bg-red-500'
+                    : 'bg-yellow-500 animate-pulse'
+                }`}
+              />
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {serverStatus === 'connected'
+                  ? 'MLX Server'
+                  : serverStatus === 'disconnected'
+                  ? 'Disconnected'
+                  : 'Connecting...'}
+              </span>
+            </div>
+            {models.length > 0 && (
+              <ModelSelector
+                models={models}
+                selectedModel={selectedModel}
+                onSelect={setSelectedModel}
+              />
+            )}
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto px-6 py-6">
