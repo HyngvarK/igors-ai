@@ -5,6 +5,7 @@ import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 import ModelSelector from '@/components/ModelSelector';
 import Sidebar from '@/components/Sidebar';
+import Settings from '@/components/Settings';
 import { Conversation, Message } from '@/lib/db';
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [serverStatus, setServerStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
+  const [maxTokens, setMaxTokens] = useState(4096);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -200,7 +202,7 @@ export default function Home() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: selectedModel, messages: allMessages }),
+        body: JSON.stringify({ model: selectedModel, messages: allMessages, max_tokens: maxTokens }),
       });
 
       if (!res.ok) throw new Error('Chat request failed');
@@ -310,6 +312,7 @@ export default function Home() {
                 onSwitch={switchModel}
               />
             )}
+            <Settings maxTokens={maxTokens} onMaxTokensChange={setMaxTokens} />
           </div>
         </header>
 

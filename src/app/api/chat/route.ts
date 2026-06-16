@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 const MLX_URL = 'http://localhost:8080/v1/chat/completions';
 
 export async function POST(request: NextRequest) {
-  const { model, messages } = await request.json();
+  const { model, messages, max_tokens = 4096 } = await request.json();
 
   const response = await fetch(MLX_URL, {
     method: 'POST',
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       model,
       messages,
       stream: true,
-      max_tokens: 4096,
+      max_tokens,
     }),
   });
 
